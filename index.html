@@ -546,7 +546,7 @@ function findUserId(harData) {
             if (userId) {
                 infoFound = true;
                 const li = document.createElement('li');
-                li.innerHTML = `<strong>version:</strong> ${userId}`;
+                li.innerHTML = `<strong>User ID:</strong> ${userId}`;
                 deviceInfoDetails.appendChild(li);
             }
 
@@ -641,7 +641,7 @@ function findUserId(harData) {
                     deviceInfoHtml += `<tr><td style="padding: 8px; width: 30%; font-weight: bold;">version</td><td style="padding: 8px;">${appVersion}</td></tr>`;
                 }
                  if (userId) {
-                    deviceInfoHtml += `<tr><td style="padding: 8px; width: 30%; font-weight: bold;">version</td><td style="padding: 8px;">${userId}</td></tr>`;
+                    deviceInfoHtml += `<tr><td style="padding: 8px; width: 30%; font-weight: bold;">User ID</td><td style="padding: 8px;">${userId}</td></tr>`;
                 }
                 deviceInfoHtml += '</tbody></table>';
             } else {
