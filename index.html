@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аналізатор .har файлів</title>
+    <!-- Подключение библиотеки EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            background-color: #fff;
+        }
+        h1 {
+            color: #1a1a1a;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .controls-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px auto;
+            flex-wrap: wrap;
+        }
+        #har-file-input {
+            opacity: 0;
+            position: absolute;
+            z-index: -1;
+        }
+        .file-upload-label {
+            display: inline-block;
+            padding: 12px 30px;
+            border: 2px dashed #007aff;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #007aff;
+            background-color: #f4f7ff;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .file-upload-label:hover {
+            background-color: #eaf2ff;
+        }
+        #compare-button {
+            padding: 14px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            background-color: #007aff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #compare-button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        #compare-button:disabled {
+            background-color: #c7c7cc;
+            cursor: not-allowed;
+        }
+        #file-name {
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+            color: #5f6368;
+        }
+        #status-message {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .results-section {
+            margin-top: 30px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 20px;
+        }
+        h2 {
+            color: #1a1a1a;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            word-break: break-all;
+            transition: background-color 0.2s;
+        }
+        #device-info-details li {
+             border-left: 4px solid #007aff;
+        }
+        /* Стили для пропущенных событий */
+        #missing-event-list li {
+            border-left: 4px solid #af52de;
+            cursor: pointer;
+        }
+        #missing-event-list li:hover {
+             background-color: #f0f0f0;
+        }
+        #missing-event-list li.active {
+             background-color: #e9e9f0;
+        }
+        /* Стили для новых/неизвестных событий */
+        #unknown-event-list li {
+             border-left: 4px solid #ff9500;
+        }
+        .spoiler-content {
+            display: none;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            color: #555;
+        }
+        .error {
+            color: #d93025;
+            font-weight: bold;
+            border-left-color: #d93025;
+            cursor: default;
+        }
+        .empty {
+             color: #5f6368;
+             border-left-color: #34c759; /* Зеленый, если все в порядке */
+             cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Завантажувач та аналізатор .har файлів</h1>
+
+    <div class="input-group">
+        <label for="sheet-url-input">URL Google Таблиці:</label>
+        <input type="url" id="sheet-url-input" placeholder="Вставте посилання на публічну Google Таблицю...">
+    </div>
+
+    <div class="controls-wrapper">
+        <label for="har-file-input" class="file-upload-label">Оберіть .har файл</label>
+        <input type="file" id="har-file-input" accept=".har">
+        <button id="compare-button" disabled>Зробити порівняння</button>
+    </div>
+    <div id="file-name">Файл не обрано</div>
+    
+    <div id="status-message"></div>
+
+    <div id="device-info-container" class="results-section">
+        <h2>Інформація про пристрій та версію:</h2>
+        <ul id="device-info-details">
+             <li class="empty">Інформація не знайдена...</li>
+        </ul>
+    </div>
+
+    <div id="results-container" class="results-section">
+        <h2>Події з таблиці, які не знайдено у файлі:</h2>
+        <ul id="missing-event-list">
+            <li class="empty">Тут буде список пропущених подій...</li>
+        </ul>
+    </div>
+
+    <div id="unknown-results-container" class="results-section">
+        <h2>Події, знайдені у файлі, але відсутні у таблиці:</h2>
+        <ul id="unknown-event-list">
+            <li class="empty">Тут буде список нових/невідомих подій...</li>
+        </ul>
+    </div>
+
+    <script>
+        // --- НАСТРОЙКА EMAILJS ---
+        // ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ С САЙТА emailjs.com
+        const EMAILJS_SERVICE_ID = 'service_3kwzdot';
+        const EMAILJS_TEMPLATE_ID = 'template_q5xaywa';
+        const EMAILJS_USER_ID = 'qZLCGx6dDb35IBL6p';
+
+        // Инициализация EmailJS
+        (function() {
+            emailjs.init(EMAILJS_USER_ID);
+        })();
+        // -------------------------
+
+        const fileInput = document.getElementById('har-file-input');
+        const missingEventList = document.getElementById('missing-event-list');
+        const unknownEventList = document.getElementById('unknown-event-list');
+        const deviceInfoDetails = document.getElementById('device-info-details');
+        const fileNameSpan = document.getElementById('file-name');
+        const statusMessage = document.getElementById('status-message');
+        const sheetUrlInput = document.getElementById('sheet-url-input');
+        const compareButton = document.getElementById('compare-button');
+
+        let selectedHarFile = null;
+
+        fileInput.addEventListener('change', handleFileSelect);
+        sheetUrlInput.addEventListener('input', updateButtonState);
+        compareButton.addEventListener('click', startComparison);
+        
+        function updateButtonState() {
+            const urlEntered = sheetUrlInput.value.trim() !== '';
+            const fileSelected = selectedHarFile !== null;
+            compareButton.disabled = !(urlEntered && fileSelected);
+        }
+
+        function handleFileSelect(event) {
+            selectedHarFile = event.target.files[0];
+            if (selectedHarFile) {
+                fileNameSpan.textContent = `Обрано файл: ${selectedHarFile.name}`;
+            } else {
+                fileNameSpan.textContent = 'Файл не обрано';
+            }
+            updateButtonState();
+        }
+        
+        function convertGoogleSheetUrlToCsvUrl(url) {
+            const idRegex = /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
+            const idMatch = url.match(idRegex);
+
+            if (!idMatch || !idMatch[1]) {
+                return null;
+            }
+            const sheetId = idMatch[1];
+
+            const gidRegex = /[#&]gid=(\d+)/;
+            const gidMatch = url.match(gidRegex);
+            
+            let csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+
+            if (gidMatch && gidMatch[1]) {
+                const gid = gidMatch[1];
+                csvUrl += `&gid=${gid}`;
+            }
+            
+            return csvUrl;
+        }
+
+        async function fetchKnownEvents(userUrl) {
+            const csvUrl = convertGoogleSheetUrlToCsvUrl(userUrl);
+            if (!csvUrl) {
+                throw new Error('Невірний URL Google Таблиці. Переконайтеся, що посилання коректне.');
+            }
+            
+            statusMessage.textContent = 'Завантаження списку відомих подій з Google Sheets...';
+            statusMessage.style.color = '#007aff';
+
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error(`Мережева помилка: ${response.statusText}`);
+                }
+                const csvText = await response.text();
+                
+                const knownEventsMap = new Map();
+                const rows = csvText.split('\n');
+                const startIndex = rows[0].toLowerCase().includes("event_type") ? 1 : 0;
+
+                for (let i = startIndex; i < rows.length; i++) {
+                    const row = rows[i].trim();
+                    if (row.length === 0) continue;
+                    
+                    const cleanedRow = row.startsWith('"') && row.endsWith('"') ? row.slice(1, -1) : row;
+                    const columns = cleanedRow.split('","');
+                    
+                    const eventType = columns[0];
+                    const description = columns[1] || 'Опис не надано.';
+
+                    if (eventType) {
+                        knownEventsMap.set(eventType, description);
+                    }
+                }
+                
+                statusMessage.textContent = 'Список відомих подій успішно завантажено.';
+                statusMessage.style.color = '#34c759';
+                return knownEventsMap;
+
+            } catch (error) {
+                statusMessage.textContent = `Помилка завантаження таблиці: ${error.message}`;
+                statusMessage.style.color = '#d93025';
+                console.error('Ошибка при загрузке Google Sheet:', error);
+                throw error;
+            }
+        }
+
+        async function startComparison() {
+            const userUrl = sheetUrlInput.value.trim();
+            missingEventList.innerHTML = '<li class="empty">...</li>';
+            unknownEventList.innerHTML = '<li class="empty">...</li>';
+            deviceInfoDetails.innerHTML = '<li class="empty">...</li>';
+
+            try {
+                const knownEventsMap = await fetchKnownEvents(userUrl);
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const harData = JSON.parse(e.target.result);
+                        
+                        const deviceInfo = findDeviceObject(harData);
+                        const appVersion = findAppVersion(harData);
+                        displayDeviceInfo(deviceInfo, appVersion);
+                        
+                        const harEventsArray = findEventTypesAdvanced(harData);
+                        const harEventsSet = new Set(harEventsArray);
+                        
+                        const missingEvents = Array.from(knownEventsMap.keys()).filter(event => !harEventsSet.has(event));
+                        const unknownEvents = harEventsArray.filter(event => !knownEventsMap.has(event));
+                        
+                        displayMissingEvents(missingEvents, knownEventsMap);
+                        displayUnknownEvents(unknownEvents);
+
+                        // После анализа отправляем отчет
+                        sendEmailReport(missingEvents, unknownEvents, userUrl, deviceInfo, appVersion);
+
+                    } catch (error) {
+                        displayError("Помилка! Не вдалося прочитати файл. Переконайтеся, що це коректний .har (JSON) файл.");
+                        console.error("Ошибка парсинга HAR файла:", error);
+                    }
+                };
+                reader.readAsText(selectedHarFile);
+
+            } catch (error) {
+                return;
+            }
+        }
+
+        function findDeviceObject(harData) {
+            let deviceObject = null;
+            const requiredKeys = ['brand', 'model', 'os_version', 'os'];
+
+            function recursiveDeviceSearch(obj) {
+                if (deviceObject) return; // Stop if already found
+                if (typeof obj !== 'object' || obj === null) return;
+
+                if (obj.hasOwnProperty('device')) {
+                    const potentialDevice = obj.device;
+                    const hasAllKeys = requiredKeys.every(key => potentialDevice.hasOwnProperty(key));
+                    if (hasAllKeys) {
+                        deviceObject = potentialDevice;
+                        return;
+                    }
+                }
+
+                for (const k in obj) {
+                    if (obj.hasOwnProperty(k)) {
+                        recursiveDeviceSearch(obj[k]);
+                    }
+                }
+            }
+            
+            if (harData && harData.log && harData.log.entries) {
+                for (const entry of harData.log.entries) {
+                    if (deviceObject) break;
+                    const textSources = [];
+                    if (entry.request?.postData?.text) textSources.push(entry.request.postData.text);
+                    if (entry.response?.content?.text) textSources.push(entry.response.content.text);
+                    
+                    for (const text of textSources) {
+                        try {
+                            recursiveDeviceSearch(JSON.parse(text));
+                            if(deviceObject) break;
+                        } catch (e) { /* ignore */ }
+                    }
+                }
+            }
+            return deviceObject;
+        }
+
+        function findAppVersion(harData) {
+            let appVersion = null;
+
+            function recursiveSearch(obj) {
+                if (appVersion) return; // Stop if already found
+                if (typeof obj !== 'object' || obj === null) return;
+
+                if (obj.hasOwnProperty('app') && typeof obj.app === 'object' && obj.app !== null && obj.app.hasOwnProperty('version')) {
+                    appVersion = obj.app.version;
+                    return;
+                }
+                
+                if (obj.hasOwnProperty('event_type') && obj.event_type === 'app' && obj.hasOwnProperty('version')) {
+                    appVersion = obj.version;
+                    return;
+                }
+
+                for (const k in obj) {
+                    if (obj.hasOwnProperty(k)) {
+                        recursiveSearch(obj[k]);
+                    }
+                }
+            }
+
+            if (harData && harData.log && harData.log.entries) {
+                for (const entry of harData.log.entries) {
+                    if (appVersion) break;
+                    const textSources = [];
+                    if (entry.request?.postData?.text) textSources.push(entry.request.postData.text);
+                    if (entry.response?.content?.text) textSources.push(entry.response.content.text);
+
+                    for (const text of textSources) {
+                        try {
+                            recursiveSearch(JSON.parse(text));
+                            if (appVersion) break;
+                        } catch (e) { /* ignore */ }
+                    }
+                }
+            }
+            return appVersion;
+        }
+
+        function findEventTypesAdvanced(harData) {
+            const foundEvents = new Set();
+            const searchKey = 'event_type';
+
+            function recursiveSearch(obj) {
+                if (typeof obj !== 'object' || obj === null) return;
+                if (searchKey in obj) foundEvents.add(String(obj[searchKey]));
+                for (const k in obj) if (obj.hasOwnProperty(k)) recursiveSearch(obj[k]);
+            }
+            
+            function parseUrlEncoded(text) {
+                try {
+                    const params = new URLSearchParams(text);
+                    if (params.has(searchKey)) foundEvents.add(params.get(searchKey));
+                } catch(e) { /* Игнорируем */ }
+            }
+
+            if (harData && harData.log && harData.log.entries) {
+                for (const entry of harData.log.entries) {
+                    if (entry.request && entry.request.url) {
+                        try {
+                            const url = new URL(entry.request.url);
+                            if (url.searchParams.has(searchKey)) foundEvents.add(url.searchParams.get(searchKey));
+                        } catch(e) { /* Игнорируем */ }
+                    }
+
+                    if (entry.request && entry.request.postData && entry.request.postData.text) {
+                        const text = entry.request.postData.text;
+                        try {
+                            recursiveSearch(JSON.parse(text));
+                        } catch (e) {
+                            parseUrlEncoded(text);
+                        }
+                    }
+                    
+                     if (entry.response && entry.response.content && entry.response.content.text) {
+                        try {
+                            recursiveSearch(JSON.parse(entry.response.content.text));
+                        } catch (e) { /* Игнорируем */ }
+                    }
+                }
+            }
+            return Array.from(foundEvents);
+        }
+
+        function displayDeviceInfo(deviceInfo, appVersion) {
+            deviceInfoDetails.innerHTML = '';
+            let infoFound = false;
+            if (deviceInfo) {
+                infoFound = true;
+                for (const key in deviceInfo) {
+                    if (deviceInfo.hasOwnProperty(key)) {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<strong>${key}:</strong> ${deviceInfo[key]}`;
+                        deviceInfoDetails.appendChild(li);
+                    }
+                }
+            }
+            if (appVersion) {
+                infoFound = true;
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>version:</strong> ${appVersion}`;
+                deviceInfoDetails.appendChild(li);
+            }
+
+            if (!infoFound) {
+                const li = document.createElement('li');
+                li.className = 'empty';
+                li.textContent = 'Інформація про пристрій та версію не знайдена...';
+                deviceInfoDetails.appendChild(li);
+            }
+        }
+
+        function displayMissingEvents(events, knownEventsMap) {
+            missingEventList.innerHTML = '';
+
+            if (events.length > 0) {
+                events.forEach(eventType => {
+                    const li = document.createElement('li');
+                    
+                    const eventNameSpan = document.createElement('span');
+                    eventNameSpan.textContent = eventType;
+                    li.appendChild(eventNameSpan);
+                    
+                    const description = knownEventsMap.get(eventType) || 'Опис для цієї події не знайдено в таблиці.';
+                    
+                    const spoilerDiv = document.createElement('div');
+                    spoilerDiv.className = 'spoiler-content';
+                    spoilerDiv.textContent = description;
+                    li.appendChild(spoilerDiv);
+                    
+                    li.addEventListener('click', () => {
+                        const isVisible = spoilerDiv.style.display === 'block';
+                        spoilerDiv.style.display = isVisible ? 'none' : 'block';
+                        li.classList.toggle('active', !isVisible);
+                    });
+
+                    missingEventList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.className = 'empty';
+                li.textContent = 'Пропущених подій немає. Всі події з таблиці були знайдені у файлі.';
+                missingEventList.appendChild(li);
+            }
+        }
+
+        function displayUnknownEvents(events) {
+            unknownEventList.innerHTML = '';
+
+            if (events.length > 0) {
+                 const uniqueUnknownEvents = [...new Set(events)];
+                uniqueUnknownEvents.forEach(eventType => {
+                    const li = document.createElement('li');
+                    li.textContent = eventType;
+                    unknownEventList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.className = 'empty';
+                li.textContent = 'Нових/невідомих подій у файлі не знайдено.';
+                unknownEventList.appendChild(li);
+            }
+        }
+        
+        function displayError(message) {
+            missingEventList.innerHTML = '';
+            unknownEventList.innerHTML = '';
+            deviceInfoDetails.innerHTML = '';
+
+            const li = document.createElement('li');
+            li.className = 'error';
+            li.textContent = message;
+
+            // Display error in all sections for visibility
+            missingEventList.appendChild(li.cloneNode(true));
+            unknownEventList.appendChild(li.cloneNode(true));
+            deviceInfoDetails.appendChild(li);
+        }
+
+        function sendEmailReport(missingEvents, unknownEvents, sheetUrl, deviceInfo, appVersion) {
+            const reportDate = new Date().toLocaleString('uk-UA');
+            const subject = `Звіт від ${reportDate} для файлу: ${selectedHarFile.name}`;
+            
+            let deviceInfoHtml = '<h3>Інформація про пристрій та версію:</h3>';
+            if (deviceInfo || appVersion) {
+                deviceInfoHtml += '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border-color: #ddd;"><tbody>';
+                if (deviceInfo) {
+                    for (const key in deviceInfo) {
+                        deviceInfoHtml += `<tr><td style="padding: 8px; width: 30%; font-weight: bold;">${key}</td><td style="padding: 8px;">${deviceInfo[key]}</td></tr>`;
+                    }
+                }
+                if (appVersion) {
+                    deviceInfoHtml += `<tr><td style="padding: 8px; width: 30%; font-weight: bold;">version</td><td style="padding: 8px;">${appVersion}</td></tr>`;
+                }
+                deviceInfoHtml += '</tbody></table>';
+            } else {
+                deviceInfoHtml += '<p>Інформація про пристрій та версію не знайдена.</p>';
+            }
+
+            let missingEventsHtml = '<h3 style="margin-top: 20px;">Події з таблиці, які не знайдено у файлі:</h3>';
+            if (missingEvents.length > 0) {
+                missingEventsHtml += '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border-color: #ddd;"><tbody>';
+                missingEvents.forEach(event => {
+                    missingEventsHtml += `<tr><td style="padding: 8px;">${event}</td></tr>`;
+                });
+                missingEventsHtml += '</tbody></table>';
+            } else {
+                missingEventsHtml += '<p>Пропущених подій немає.</p>';
+            }
+
+            let unknownEventsHtml = '<h3 style="margin-top: 20px;">Події, знайдені у файлі, але відсутні у таблиці:</h3>';
+            if (unknownEvents.length > 0) {
+                const uniqueUnknownEvents = [...new Set(unknownEvents)];
+                unknownEventsHtml += '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border-color: #ddd;"><tbody>';
+                uniqueUnknownEvents.forEach(event => {
+                    unknownEventsHtml += `<tr><td style="padding: 8px;">${event}</td></tr>`;
+                });
+                unknownEventsHtml += '</tbody></table>';
+            } else {
+                unknownEventsHtml += '<p>Нових/невідомих подій немає.</p>';
+            }
+
+            const templateParams = {
+                subject: subject,
+                har_file_name: selectedHarFile.name,
+                sheet_url: sheetUrl,
+                email_body_html: deviceInfoHtml + missingEventsHtml + unknownEventsHtml,
+                to_email: 'stillwcraft@gmail.com'
+            };
+
+            statusMessage.textContent = 'Відправка звіту на пошту...';
+            statusMessage.style.color = '#007aff';
+            
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+                .then(function(response) {
+                   console.log('SUCCESS!', response.status, response.text);
+                   statusMessage.textContent = 'Порівняння завершено. Звіт успішно відправлено!';
+                   statusMessage.style.color = '#34c759';
+                }, function(error) {
+                   console.log('FAILED...', error);
+                   statusMessage.textContent = 'Порівняння завершено, але сталася помилка відправки звіту.';
+                   statusMessage.style.color = '#d93025';
+                });
+        }
+
+    </script>
+</body>
+</html>
+
