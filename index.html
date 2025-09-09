@@ -357,7 +357,7 @@
 
         function findDeviceObject(harData) {
             let deviceObject = null;
-            const requiredKeys = ['brand', 'model', 'os_version', 'os'];
+            const requiredKeys = ['brand', 'model', 'os_version', 'os', 'user_id', 'city_id'];
 
             function recursiveDeviceSearch(obj) {
                 if (deviceObject) return; // Stop if already found
