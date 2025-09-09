@@ -9,21 +9,25 @@
     <style>
     body {
         font-family: 'Segoe UI', Tahoma, sans-serif;
-        background-color: #fdfdfd;
-        color: #1a1a1a;
+        background-color: #f9f4ef;
+        color: #3e2f23;
         max-width: 900px;
         margin: 40px auto;
         padding: 30px;
         border-radius: 10px;
-        background-image: linear-gradient(to bottom, #ffffff, #f3f3f3);
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Sakura_branch_pink_blossom.png/200px-Sakura_branch_pink_blossom.png');
+        background-repeat: no-repeat;
+        background-position: top right;
+        background-size: 140px auto;
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
     }
 
     h1, h2 {
-        color: #111;
+        color: #2f2017;
         text-align: center;
         font-weight: 700;
         margin-bottom: 30px;
+        font-family: 'Georgia', serif;
     }
 
     .input-group {
@@ -34,7 +38,7 @@
         display: block;
         margin-bottom: 6px;
         font-weight: 600;
-        color: #ff3366;
+        color: #8c5d3e;
         margin-top: 20px;
     }
 
@@ -42,10 +46,10 @@
         width: 100%;
         padding: 12px;
         font-size: 1em;
-        border: 1px solid #ccc;
+        border: 1px solid #d4bfa3;
         border-radius: 6px;
-        background-color: #ffffff;
-        color: #111;
+        background-color: #fffaf4;
+        color: #3e2f23;
         box-sizing: border-box;
     }
 
@@ -67,17 +71,17 @@
     .file-upload-label {
         display: inline-block;
         padding: 12px 30px;
-        border: 2px dashed #00bfff;
+        border: 2px dashed #b88c6e;
         border-radius: 8px;
         cursor: pointer;
-        color: #00bfff;
-        background-color: #f0faff;
+        color: #7a5035;
+        background-color: #fef7f0;
         transition: all 0.3s ease;
     }
 
     .file-upload-label:hover {
-        background-color: #d6f1ff;
-        color: #0077cc;
+        background-color: #f3e4d9;
+        color: #4b2c1d;
     }
 
     #compare-button {
@@ -85,7 +89,7 @@
         font-size: 16px;
         font-weight: 700;
         color: #fff;
-        background-color: #ff3366;
+        background-color: #db7093; /* рожево-сакуровий */
         border: none;
         border-radius: 8px;
         cursor: pointer;
@@ -93,12 +97,11 @@
     }
 
     #compare-button:hover:not(:disabled) {
-        background-color: #cc0044;
+        background-color: #c65d83;
     }
 
     #compare-button:disabled {
         background-color: #ccc;
-        color: #666;
         cursor: not-allowed;
     }
 
@@ -107,19 +110,19 @@
         text-align: center;
         margin-top: 10px;
         font-style: italic;
-        color: #666;
+        color: #856a58;
     }
 
     #status-message {
         text-align: center;
         margin-top: 15px;
         font-weight: bold;
-        color: #007a7a;
+        color: #a8564d;
     }
 
     .results-section {
         margin-top: 30px;
-        border-top: 1px solid #ddd;
+        border-top: 1px solid #d6c2b0;
         padding-top: 20px;
     }
 
@@ -129,71 +132,220 @@
     }
 
     li {
-        background-color: #f7f7f7;
+        background-color: #fff8f1;
         padding: 10px 15px;
         border-radius: 5px;
         margin-bottom: 8px;
         word-break: break-word;
-        border-left: 4px solid #ccc;
-        color: #333;
+        border-left: 4px solid #b68c65;
+        color: #3e2f23;
         transition: background-color 0.2s;
     }
 
     #device-info-details li {
-        border-left: 4px solid #00bfff;
+        border-left: 4px solid #c09068;
     }
 
     #missing-event-list li {
-        border-left: 4px solid #ffcc00;
+        border-left: 4px solid #d87b6f;
         cursor: pointer;
     }
 
     #missing-event-list li:hover {
-        background-color: #f0f0f0;
+        background-color: #fceee6;
     }
 
     #missing-event-list li.active {
-        background-color: #e8e8e8;
+        background-color: #f4e0d8;
     }
 
     #unknown-event-list li {
-        border-left: 4px solid #ff6600;
+        border-left: 4px solid #e7a452;
     }
 
     .spoiler-content {
         display: none;
         padding: 10px;
         margin-top: 10px;
-        background-color: #ffffff;
-        border: 1px solid #ddd;
+        background-color: #fff8f3;
+        border: 1px solid #e1d1c1;
         border-radius: 4px;
-        color: #444;
+        color: #4d3b2f;
     }
 
     .error {
-        color: #d93025;
+        color: #c44b42;
         font-weight: bold;
-        border-left-color: #d93025;
+        border-left-color: #a9342b;
         text-align: center;
         margin-bottom: 20px;
     }
 
     .empty {
-        color: #888;
-        border-left-color: #34c759;
+        color: #9c8672;
+        border-left-color: #7bb17e;
         text-align: center;
     }
 
     ::selection {
-        background: #ffcc00;
-        color: #000;
+        background: #ffe4e1;
+        color: #2a1d15;
+    }
+    /* --- Кнопка теми --- */
+    #theme-toggle {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        background-color: transparent;
+        border: 2px solid #ccc;
+        color: inherit;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.3s;
+    }
+
+    #theme-toggle:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+        transition: background-color 0.4s, color 0.4s;
+    }
+
+    /* --- Світла тема (за замовчуванням) --- */
+    body.light-theme {
+        background-color: #f9f4ef;
+        color: #3e2f23;
+        background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Sakura_branch_pink_blossom.png/200px-Sakura_branch_pink_blossom.png');
+        background-repeat: no-repeat;
+        background-position: top right;
+        background-size: 140px auto;
+    }
+
+    body.light-theme input[type="url"],
+    body.light-theme .file-upload-label,
+    body.light-theme .spoiler-content,
+    body.light-theme li {
+        background-color: #fffaf4;
+        color: #3e2f23;
+    }
+
+    body.light-theme .file-upload-label {
+        border-color: #b88c6e;
+        color: #7a5035;
+    }
+
+    body.light-theme #compare-button {
+        background-color: #db7093;
+        color: white;
+    }
+
+    body.light-theme #compare-button:hover {
+        background-color: #c65d83;
+    }
+
+    body.light-theme .error {
+        color: #c44b42;
+    }
+
+    /* --- Темна тема --- */
+    body.dark-theme {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+        background-image: none;
+    }
+
+    body.dark-theme input[type="url"],
+    body.dark-theme .file-upload-label,
+    body.dark-theme .spoiler-content,
+    body.dark-theme li {
+        background-color: #2b2b2b;
+        color: #e0e0e0;
+    }
+
+    body.dark-theme .file-upload-label {
+        border-color: #888;
+        color: #ccc;
+    }
+
+    body.dark-theme #compare-button {
+        background-color: #ff3366;
+        color: white;
+    }
+
+    body.dark-theme #compare-button:hover {
+        background-color: #cc0044;
+    }
+
+    body.dark-theme .error {
+        color: #ff5252;
+    }
+
+    /* --- Спільні елементи --- */
+    h1, h2 {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    input[type="url"] {
+        padding: 12px;
+        font-size: 1em;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    .file-upload-label {
+        display: inline-block;
+        padding: 12px 30px;
+        border: 2px dashed;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    #compare-button {
+        padding: 14px 30px;
+        font-size: 16px;
+        font-weight: 700;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .results-section {
+        margin-top: 30px;
+        border-top: 1px solid #ccc;
+        padding-top: 20px;
+    }
+
+    li {
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-bottom: 8px;
+        word-break: break-word;
+        border-left: 4px solid #888;
+        transition: background-color 0.2s;
+    }
+
+    .spoiler-content {
+        display: none;
+        padding: 10px;
+        margin-top: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
     }
 </style>
 
 </head>
 <body>
+<button id="theme-toggle">🌓 Змінити тему</button>
 
-    <h1>Завантажувач та аналізатор .har файлів</h1>
+    <h1>.HAR Checker🕵🏻‍♂️</h1>
 
     <div class="input-group">
         <label for="sheet-url-input">URL Google Таблиці:</label>
@@ -725,6 +877,27 @@ function findUserId(harData) {
         }
 
     </script>
+        <script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    // Перевірити localStorage
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    body.classList.add(savedTheme + '-theme');
+
+    // Перемикач
+    themeToggle.addEventListener('click', () => {
+        if (body.classList.contains('light-theme')) {
+            body.classList.remove('light-theme');
+            body.classList.add('dark-theme');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            body.classList.remove('dark-theme');
+            body.classList.add('light-theme');
+            localStorage.setItem('theme', 'light');
+        }
+    });
+</script>
 </body>
 </html>
 
