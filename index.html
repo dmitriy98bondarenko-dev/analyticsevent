@@ -329,7 +329,8 @@
                         
                         const deviceInfo = findDeviceObject(harData);
                         const appVersion = findAppVersion(harData);
-                        displayDeviceInfo(deviceInfo, appVersion);
+                        const userId = findUserId(harData);
+                        displayDeviceInfo(deviceInfo, appVersion, userId);
                         
                         const harEventsArray = findEventTypesAdvanced(harData);
                         const harEventsSet = new Set(harEventsArray);
@@ -341,7 +342,7 @@
                         displayUnknownEvents(unknownEvents);
 
                         // После анализа отправляем отчет
-                        sendEmailReport(missingEvents, unknownEvents, userUrl, deviceInfo, appVersion);
+                        sendEmailReport(missingEvents, unknownEvents, userUrl, deviceInfo, appVersion, userId);
 
                     } catch (error) {
                         displayError("Помилка! Не вдалося прочитати файл. Переконайтеся, що це коректний .har (JSON) файл.");
@@ -357,7 +358,7 @@
 
         function findDeviceObject(harData) {
             let deviceObject = null;
-            const requiredKeys = ['brand', 'model', 'os_version', 'os', 'user_id', 'city_id'];
+            const requiredKeys = ['brand', 'model', 'os_version', 'os'];
 
             function recursiveDeviceSearch(obj) {
                 if (deviceObject) return; // Stop if already found
@@ -438,6 +439,45 @@
             }
             return appVersion;
         }
+        
+function findUserId(harData) {
+  let userId = null;
+
+  function recursiveSearch(obj) {
+    if (userId) return;
+    if (typeof obj !== 'object' || obj === null) return;
+
+    if (obj.hasOwnProperty('user_id') && typeof obj.user_id === 'string') {
+      userId = obj.user_id;
+      return;
+    }
+
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        recursiveSearch(obj[key]);
+      }
+    }
+  }
+
+  if (harData?.log?.entries) {
+    for (const entry of harData.log.entries) {
+      if (userId) break;
+
+      const textSources = [];
+      if (entry.request?.postData?.text) textSources.push(entry.request.postData.text);
+      if (entry.response?.content?.text) textSources.push(entry.response.content.text);
+
+      for (const text of textSources) {
+        try {
+          recursiveSearch(JSON.parse(text));
+          if (userId) break;
+        } catch (e) {}
+      }
+    }
+  }
+
+  return userId;
+}
 
         function findEventTypesAdvanced(harData) {
             const foundEvents = new Set();
@@ -484,7 +524,7 @@
             return Array.from(foundEvents);
         }
 
-        function displayDeviceInfo(deviceInfo, appVersion) {
+        function displayDeviceInfo(deviceInfo, appVersion, userId) {
             deviceInfoDetails.innerHTML = '';
             let infoFound = false;
             if (deviceInfo) {
@@ -501,6 +541,12 @@
                 infoFound = true;
                 const li = document.createElement('li');
                 li.innerHTML = `<strong>version:</strong> ${appVersion}`;
+                deviceInfoDetails.appendChild(li);
+            }
+            if (userId) {
+                infoFound = true;
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>version:</strong> ${userId}`;
                 deviceInfoDetails.appendChild(li);
             }
 
@@ -579,12 +625,12 @@
             deviceInfoDetails.appendChild(li);
         }
 
-        function sendEmailReport(missingEvents, unknownEvents, sheetUrl, deviceInfo, appVersion) {
+        function sendEmailReport(missingEvents, unknownEvents, sheetUrl, deviceInfo, appVersion, userId) {
             const reportDate = new Date().toLocaleString('uk-UA');
             const subject = `Звіт від ${reportDate} для файлу: ${selectedHarFile.name}`;
             
             let deviceInfoHtml = '<h3>Інформація про пристрій та версію:</h3>';
-            if (deviceInfo || appVersion) {
+            if (deviceInfo || appVersion || userId) {
                 deviceInfoHtml += '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border-color: #ddd;"><tbody>';
                 if (deviceInfo) {
                     for (const key in deviceInfo) {
@@ -593,6 +639,9 @@
                 }
                 if (appVersion) {
                     deviceInfoHtml += `<tr><td style="padding: 8px; width: 30%; font-weight: bold;">version</td><td style="padding: 8px;">${appVersion}</td></tr>`;
+                }
+                 if (userId) {
+                    deviceInfoHtml += `<tr><td style="padding: 8px; width: 30%; font-weight: bold;">version</td><td style="padding: 8px;">${userId}</td></tr>`;
                 }
                 deviceInfoHtml += '</tbody></table>';
             } else {
@@ -627,7 +676,7 @@
                 har_file_name: selectedHarFile.name,
                 sheet_url: sheetUrl,
                 email_body_html: deviceInfoHtml + missingEventsHtml + unknownEventsHtml,
-                to_email: 'stillwcraft@gmail.com'
+                to_email: 'dmitriy98bondarenko@gmail.com'
             };
 
             statusMessage.textContent = 'Відправка звіту на пошту...';
